@@ -13,6 +13,7 @@ int main()
     int groundVal = windowHeight;
     int posY = windowHeight/2;
     int velocityY = 0;
+    int jumpForce = 20;
     
     bool isGrounded;
 
@@ -37,9 +38,9 @@ int main()
             velocityY += gravity;
         }
 
-        if(IsKeyPressed(KEY_SPACE))
+        if(IsKeyPressed(KEY_SPACE) && isGrounded)
         {
-            velocityY -= 10; 
+            velocityY -= jumpForce; 
         }
 
         posY += velocityY;

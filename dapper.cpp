@@ -7,7 +7,9 @@ int main()
     const int windowWidth = 600;
     const char windowName[] = "DapperDasher";
     const char scarfySpritePath[] = "textures/scarfy.png";
+    const char nebulaSpritePath[] = "textures/12_nebula_spritesheet.png";
     const int gravity = 1000;
+    const float animationUpdateTime = 1.0/12.0;
 
     #pragma endregion CONST FIELDS
 
@@ -22,21 +24,42 @@ int main()
     
     bool isGrounded;
 
+    int scarfyFrameX = 0;
+
+    float runningTime = 0.0;
+
+    int nebulaFrameX = 0;
+    int nebulaFrameY = 0;
+
     #pragma endregion PRIVATE FIELDS
 
     #pragma region GAME START
 
     InitWindow(windowWidth, windowHeight, windowName);
     SetTargetFPS(60);
+
+    // nebula variables
+    Texture2D nebulaSprite = LoadTexture(nebulaSpritePath);
+    Rectangle nebulaRect;
+    nebulaRect.width = nebulaSprite.width/8.0;
+    nebulaRect.height = nebulaSprite.height/8.0;
+    nebulaRect.x = 0;
+    nebulaRect.y = 0;
+
+    Vector2 nebulaPos;
+    nebulaPos.x = 0;
+    nebulaPos.y = 0;
+
+    // scarfy variables
     Texture2D scarfySprite = LoadTexture(scarfySpritePath);
     Rectangle scarfyRect;
-    scarfyRect.width = scarfySprite.width/6;
+    scarfyRect.width = scarfySprite.width/6.0;
     scarfyRect.height = scarfySprite.height;
     scarfyRect.x = 0;
     scarfyRect.y = 0;
 
     Vector2 scarfyPos;
-    scarfyPos.x = windowWidth/2 - scarfyRect.width/2;
+    scarfyPos.x = windowWidth/2.0 - scarfyRect.width/2.0;
     scarfyPos.y = windowHeight - scarfyRect.height;
 
     #pragma endregion GAME START
@@ -72,9 +95,48 @@ int main()
 
         scarfyPos.y += velocityY * deltaTime;
         
+        // update animation frame
+        scarfyRect.x = scarfyFrameX * scarfyRect.width;
+        nebulaRect.x = nebulaFrameX * nebulaRect.width;
+        nebulaRect.y = nebulaFrameY * nebulaRect.height;
+
+        runningTime += deltaTime;
+        
+        if(runningTime >= animationUpdateTime)
+        {
+            scarfyFrameX++;
+            nebulaFrameX++;
+            
+            runningTime = 0.0;
+        }
+
+
+
+        if(scarfyFrameX > 5)
+        {
+            scarfyFrameX = 0;
+        }
+
         DrawTextureRec(scarfySprite, scarfyRect, scarfyPos, WHITE);
         
-        //DrawRectangle(windowWidth/2, posY, rectWidth, rectHeight, BLUE);
+        if(nebulaFrameX == 4 && nebulaFrameY == 7)
+        {
+            nebulaFrameX = 0;
+            nebulaFrameY = 0;
+        }
+
+        if(nebulaFrameX > 7)
+        {
+            nebulaFrameX = 0;
+            nebulaFrameY++;
+            if(nebulaFrameY > 7)
+            {
+                nebulaFrameY = 0;
+            }
+        }
+
+
+        DrawTextureRec(nebulaSprite, nebulaRect, nebulaPos, WHITE);
 
         EndDrawing();
     }

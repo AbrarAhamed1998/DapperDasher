@@ -1,15 +1,28 @@
 #include "raylib.h"
 int main()
 {
+    #pragma region CUSTOM DATA TYPES
+
+    struct AnimData
+    {
+        Rectangle rec;
+        Vector2 pos;
+        int frame;
+        float updateTime;
+        float runningTime;
+    };
+
+    #pragma endregion CUSTOM DATA TYPES
+
     #pragma region CONST FIELDS
 
-    const int windowHeight = 300;
-    const int windowWidth = 600;
+    const int windowDimensions[2] = {300,600};
+    const int windowHeight = windowDimensions[0];
+    const int windowWidth = windowDimensions[1];
     const char windowName[] = "DapperDasher";
     const char scarfySpritePath[] = "textures/scarfy.png";
     const char nebulaSpritePath[] = "textures/12_nebula_spritesheet.png";
     const int gravity = 1000;
-    const float animationUpdateTime = 1.0/12.0;
 
     #pragma endregion CONST FIELDS
 
@@ -24,13 +37,6 @@ int main()
     
     bool isGrounded;
 
-    int scarfyFrameX = 0;
-
-    float runningTime = 0.0;
-
-    int nebulaFrameX = 0;
-    int nebulaFrameY = 0;
-
     #pragma endregion PRIVATE FIELDS
 
     #pragma region GAME START
@@ -40,27 +46,42 @@ int main()
 
     // nebula variables
     Texture2D nebulaSprite = LoadTexture(nebulaSpritePath);
-    Rectangle nebulaRect;
-    nebulaRect.width = nebulaSprite.width/8.0;
-    nebulaRect.height = nebulaSprite.height/8.0;
-    nebulaRect.x = 0;
-    nebulaRect.y = 0;
 
-    Vector2 nebulaPos;
-    nebulaPos.x = 0;
-    nebulaPos.y = 0;
+    AnimData nebulaData
+    {
+        {0,0,nebulaSprite.width/8.0, nebulaSprite.height/8.0},
+        {windowWidth, windowHeight - nebulaData.rec.height},
+        0,
+        1.0/16.0,
+        0.0
+    };
+
+    AnimData nebulae[3]{};
+
+    for(int i=0; i<3; i++)
+    {
+        nebulae[i].rec.x = 0;
+        nebulae[i].rec.y = 0;
+        nebulae[i].rec.width = nebulaSprite.width/8.0;
+        nebulae[i].rec.height = nebulaSprite.height/8.0;
+        nebulae[i].pos.x = windowWidth, 
+        nebulae[i].pos.y = windowHeight - (nebulaSprite.height/8.0);
+    }
+
+    // nebula x velocity in pixels/second.
+    int nebulaXVelocity = -200;
 
     // scarfy variables
     Texture2D scarfySprite = LoadTexture(scarfySpritePath);
-    Rectangle scarfyRect;
-    scarfyRect.width = scarfySprite.width/6.0;
-    scarfyRect.height = scarfySprite.height;
-    scarfyRect.x = 0;
-    scarfyRect.y = 0;
 
-    Vector2 scarfyPos;
-    scarfyPos.x = windowWidth/2.0 - scarfyRect.width/2.0;
-    scarfyPos.y = windowHeight - scarfyRect.height;
+    AnimData scarfyData
+    {
+        {0,0,scarfySprite.width/6.0,scarfySprite.height},
+        {windowWidth/2.0 - scarfyData.rec.width/2.0, windowHeight - scarfyData.rec.height},
+        0,
+        1.0/12.0,
+        0.0
+    };
 
     #pragma endregion GAME START
 
@@ -73,7 +94,7 @@ int main()
 
         float deltaTime = GetFrameTime();
 
-        if(scarfyPos.y >= (groundVal-scarfyRect.height))
+        if(scarfyData.pos.y >= (groundVal-scarfyData.rec.height))
         {
             isGrounded = true;
             velocityY = 0;
@@ -93,50 +114,50 @@ int main()
             velocityY -= jumpForce; 
         }
 
-        scarfyPos.y += velocityY * deltaTime;
+        //update nebula pos
+        nebulaData.pos.x += nebulaXVelocity * deltaTime;
+
+        // update scarfy pos
+        scarfyData.pos.y += velocityY * deltaTime;
         
         // update animation frame
-        scarfyRect.x = scarfyFrameX * scarfyRect.width;
-        nebulaRect.x = nebulaFrameX * nebulaRect.width;
-        nebulaRect.y = nebulaFrameY * nebulaRect.height;
+        scarfyData.rec.x = scarfyData.frame * scarfyData.rec.width;
+        nebulaData.rec.x = nebulaData.frame * nebulaData.rec.width;
+        //nebulaData.rec.y = nebulaData.rec.height;
 
-        runningTime += deltaTime;
+        scarfyData.runningTime += deltaTime;
+        nebulaData.runningTime += deltaTime;
         
-        if(runningTime >= animationUpdateTime)
+        if(scarfyData.runningTime >= scarfyData.updateTime)
         {
-            scarfyFrameX++;
-            nebulaFrameX++;
-            
-            runningTime = 0.0;
-        }
-
-
-
-        if(scarfyFrameX > 5)
-        {
-            scarfyFrameX = 0;
-        }
-
-        DrawTextureRec(scarfySprite, scarfyRect, scarfyPos, WHITE);
-        
-        if(nebulaFrameX == 4 && nebulaFrameY == 7)
-        {
-            nebulaFrameX = 0;
-            nebulaFrameY = 0;
-        }
-
-        if(nebulaFrameX > 7)
-        {
-            nebulaFrameX = 0;
-            nebulaFrameY++;
-            if(nebulaFrameY > 7)
+            if(isGrounded)
             {
-                nebulaFrameY = 0;
+                scarfyData.frame++;
             }
+            
+            scarfyData.runningTime = 0.0;
+        }
+
+        if(nebulaData.runningTime >= nebulaData.updateTime)
+        {
+            nebulaData.frame++;
+            nebulaData.runningTime = 0.0;
         }
 
 
-        DrawTextureRec(nebulaSprite, nebulaRect, nebulaPos, WHITE);
+        if(scarfyData.frame > 5)
+        {
+            scarfyData.frame = 0;
+        }
+
+        if(nebulaData.frame == 7)
+        {
+            nebulaData.frame = 0;
+        }
+
+        DrawTextureRec(scarfySprite, scarfyData.rec, scarfyData.pos, WHITE);
+
+        DrawTextureRec(nebulaSprite, nebulaData.rec, nebulaData.pos, RED);
 
         EndDrawing();
     }
@@ -146,6 +167,7 @@ int main()
     #pragma region GAME END 
 
     UnloadTexture(scarfySprite);
+    UnloadTexture(nebulaSprite);
     CloseWindow();
 
     #pragma endregion GAME END

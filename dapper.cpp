@@ -47,14 +47,14 @@ int main()
     // nebula variables
     Texture2D nebulaSprite = LoadTexture(nebulaSpritePath);
 
-    AnimData nebulaData
-    {
-        {0,0,nebulaSprite.width/8.0, nebulaSprite.height/8.0},
-        {windowWidth, windowHeight - nebulaData.rec.height},
-        0,
-        1.0/16.0,
-        0.0
-    };
+    // AnimData nebulaData
+    // {
+    //     {0,0,nebulaSprite.width/8.0, nebulaSprite.height/8.0},
+    //     {windowWidth, windowHeight - nebulaData.rec.height},
+    //     0,
+    //     1.0/16.0,
+    //     0.0
+    // };
 
     AnimData nebulae[3]{};
 
@@ -65,7 +65,7 @@ int main()
         nebulae[i].rec.width = nebulaSprite.width/8.0;
         nebulae[i].rec.height = nebulaSprite.height/8.0;
         nebulae[i].pos.x = windowWidth, 
-        nebulae[i].pos.y = windowHeight - (nebulaSprite.height/8.0);
+        nebulae[i].pos.y = (windowHeight) - ((nebulaSprite.height/8.0) * (i+1));
     }
 
     // nebula x velocity in pixels/second.
@@ -94,6 +94,8 @@ int main()
 
         float deltaTime = GetFrameTime();
 
+        #pragma region SCARFY FUNCTIONALITY
+
         if(scarfyData.pos.y >= (groundVal-scarfyData.rec.height))
         {
             isGrounded = true;
@@ -114,19 +116,15 @@ int main()
             velocityY -= jumpForce; 
         }
 
-        //update nebula pos
-        nebulaData.pos.x += nebulaXVelocity * deltaTime;
-
+        
         // update scarfy pos
         scarfyData.pos.y += velocityY * deltaTime;
         
         // update animation frame
         scarfyData.rec.x = scarfyData.frame * scarfyData.rec.width;
-        nebulaData.rec.x = nebulaData.frame * nebulaData.rec.width;
         //nebulaData.rec.y = nebulaData.rec.height;
 
         scarfyData.runningTime += deltaTime;
-        nebulaData.runningTime += deltaTime;
         
         if(scarfyData.runningTime >= scarfyData.updateTime)
         {
@@ -138,26 +136,39 @@ int main()
             scarfyData.runningTime = 0.0;
         }
 
-        if(nebulaData.runningTime >= nebulaData.updateTime)
-        {
-            nebulaData.frame++;
-            nebulaData.runningTime = 0.0;
-        }
-
-
         if(scarfyData.frame > 5)
         {
             scarfyData.frame = 0;
         }
 
-        if(nebulaData.frame == 7)
+        DrawTextureRec(scarfySprite, scarfyData.rec, scarfyData.pos, WHITE);
+        
+        #pragma endregion SCARFY FUNCTIONALITY
+
+        #pragma region NEBULA FUNCTIONALITY
+
+        //update nebulae pos
+        for(int i=0; i<3; i++)
         {
-            nebulaData.frame = 0;
+            nebulae[i].pos.x += nebulaXVelocity * deltaTime;
+            nebulae[i].rec.x = nebulae[i].frame * nebulae[i].rec.width;
+            nebulae[i].runningTime += deltaTime;
+
+            if(nebulae[i].runningTime >= nebulae[i].updateTime)
+            {
+                nebulae[i].frame++;
+                nebulae[i].runningTime = 0.0;
+            }
+
+            if(nebulae[i].frame == 7)
+            {
+                nebulae[i].frame = 0;
+            }
+
+            DrawTextureRec(nebulaSprite, nebulae[i].rec, nebulae[i].pos, RED);
         }
 
-        DrawTextureRec(scarfySprite, scarfyData.rec, scarfyData.pos, WHITE);
-
-        DrawTextureRec(nebulaSprite, nebulaData.rec, nebulaData.pos, RED);
+        #pragma endregion NEBULAE FUNCTIONALITY
 
         EndDrawing();
     }

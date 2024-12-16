@@ -1,7 +1,5 @@
 #include "raylib.h"
-int main()
-{
-    #pragma region CUSTOM DATA TYPES
+#pragma region CUSTOM DATA TYPES
 
     struct AnimData
     {
@@ -13,19 +11,35 @@ int main()
     };
 
     #pragma endregion CUSTOM DATA TYPES
+#pragma region PRIVATE METHODS
+bool IsScarfyGrounded(AnimData &scarfyData, int groundVal, int &velocityY)
+{
+    if (scarfyData.pos.y >= (groundVal - scarfyData.rec.height))
+    {
+        velocityY = 0;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+#pragma endregion PRIVATE METHODS
+#pragma region CONST FIELDS
 
-    #pragma region CONST FIELDS
+const int windowDimensions[2] = {300,600};
+const int windowHeight = windowDimensions[0];
+const int windowWidth = windowDimensions[1];
+const char windowName[] = "DapperDasher";
+const char scarfySpritePath[] = "textures/scarfy.png";
+const char nebulaSpritePath[] = "textures/12_nebula_spritesheet.png";
+const int gravity = 1000;
 
-    const int windowDimensions[2] = {300,600};
-    const int windowHeight = windowDimensions[0];
-    const int windowWidth = windowDimensions[1];
-    const char windowName[] = "DapperDasher";
-    const char scarfySpritePath[] = "textures/scarfy.png";
-    const char nebulaSpritePath[] = "textures/12_nebula_spritesheet.png";
-    const int gravity = 1000;
+#pragma endregion CONST FIELDS
+#pragma region MAIN METHOD
 
-    #pragma endregion CONST FIELDS
-
+int main()
+{
     #pragma region PRIVATE FIELDS
 
     // int rectWidth = 30;
@@ -38,6 +52,8 @@ int main()
     bool isGrounded;
 
     #pragma endregion PRIVATE FIELDS
+
+    
 
     #pragma region GAME START
 
@@ -64,7 +80,7 @@ int main()
         nebulae[i].rec.y = 0;
         nebulae[i].rec.width = nebulaSprite.width/8.0;
         nebulae[i].rec.height = nebulaSprite.height/8.0;
-        nebulae[i].pos.x = windowWidth, 
+        nebulae[i].pos.x = windowWidth + ((nebulaSprite.height/8.0) * (i+1)), 
         nebulae[i].pos.y = (windowHeight) - ((nebulaSprite.height/8.0) * (i+1));
     }
 
@@ -96,15 +112,7 @@ int main()
 
         #pragma region SCARFY FUNCTIONALITY
 
-        if(scarfyData.pos.y >= (groundVal-scarfyData.rec.height))
-        {
-            isGrounded = true;
-            velocityY = 0;
-        }
-        else
-        {
-            isGrounded = false;
-        }
+        IsScarfyGrounded(scarfyData, groundVal, isGrounded, velocityY);
 
         if(!isGrounded)
         {
@@ -182,5 +190,8 @@ int main()
     CloseWindow();
 
     #pragma endregion GAME END
-
 }
+
+#pragma endregion MAIN METHOD
+
+

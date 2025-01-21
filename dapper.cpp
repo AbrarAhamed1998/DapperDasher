@@ -12,11 +12,10 @@
 
     #pragma endregion CUSTOM DATA TYPES
 #pragma region PRIVATE METHODS
-bool IsScarfyGrounded(AnimData &scarfyData, int groundVal, int &velocityY)
+bool IsScarfyGrounded(AnimData &scarfyData, int groundVal)
 {
     if (scarfyData.pos.y >= (groundVal - scarfyData.rec.height))
     {
-        velocityY = 0;
         return true;
     }
     else
@@ -24,6 +23,52 @@ bool IsScarfyGrounded(AnimData &scarfyData, int groundVal, int &velocityY)
         return false;
     }
 }
+
+AnimData UpdateAnimationData(AnimData data, float deltaTime, int maxFrame)
+{
+    data.runningTime += deltaTime;
+
+    if(data.runningTime >= data.updateTime)
+    {
+        data.frame++;
+        data.runningTime = 0.0;
+    } 
+
+    if(data.frame > maxFrame)
+    {
+        data.frame = 0;
+    }
+
+    return data;
+}
+
+
+AnimData UpdateNebulae(AnimData nebulaeData, float nebulaXVelocity, float deltaTime)
+{
+    nebulaeData.pos.x += nebulaXVelocity * deltaTime;
+    nebulaeData.rec.x = nebulaeData.frame * nebulaeData.rec.width;
+    nebulaeData = UpdateAnimationData(nebulaeData, deltaTime, 7);
+    return nebulaeData;
+}
+
+AnimData UpdateScarfyData(AnimData scarfyData, float velocityY, float deltaTime, bool isGrounded)
+{
+    // update scarfy pos
+        scarfyData.pos.y += velocityY * deltaTime;
+        
+        // update animation frame
+        scarfyData.rec.x = scarfyData.frame * scarfyData.rec.width;
+        //nebulaData.rec.y = nebulaData.rec.height;
+
+        if(isGrounded)
+        {
+            // dont update animation frame if scarfy is not on the ground
+            scarfyData = UpdateAnimationData(scarfyData, deltaTime, 5);
+        }
+        
+        return scarfyData;
+}
+
 #pragma endregion PRIVATE METHODS
 #pragma region CONST FIELDS
 
@@ -40,7 +85,7 @@ const int gravity = 1000;
 
 int main()
 {
-    #pragma region PRIVATE FIELDS
+    #pragma region PRIVATE LOCAL FIELDS
 
     // int rectWidth = 30;
     // int rectHeight = 50;
@@ -51,7 +96,7 @@ int main()
     
     bool isGrounded;
 
-    #pragma endregion PRIVATE FIELDS
+    #pragma endregion PRIVATE LOCAL FIELDS
 
     
 
@@ -112,11 +157,15 @@ int main()
 
         #pragma region SCARFY FUNCTIONALITY
 
-        IsScarfyGrounded(scarfyData, groundVal, isGrounded, velocityY);
+        isGrounded = IsScarfyGrounded(scarfyData, groundVal);
 
         if(!isGrounded)
         {
             velocityY += gravity * deltaTime;
+        }
+        else
+        {
+            velocityY = 0;
         }
 
         if(IsKeyPressed(KEY_SPACE) && isGrounded)
@@ -125,29 +174,7 @@ int main()
         }
 
         
-        // update scarfy pos
-        scarfyData.pos.y += velocityY * deltaTime;
-        
-        // update animation frame
-        scarfyData.rec.x = scarfyData.frame * scarfyData.rec.width;
-        //nebulaData.rec.y = nebulaData.rec.height;
-
-        scarfyData.runningTime += deltaTime;
-        
-        if(scarfyData.runningTime >= scarfyData.updateTime)
-        {
-            if(isGrounded)
-            {
-                scarfyData.frame++;
-            }
-            
-            scarfyData.runningTime = 0.0;
-        }
-
-        if(scarfyData.frame > 5)
-        {
-            scarfyData.frame = 0;
-        }
+        scarfyData = UpdateScarfyData(scarfyData, velocityY, deltaTime, isGrounded);
 
         DrawTextureRec(scarfySprite, scarfyData.rec, scarfyData.pos, WHITE);
         
@@ -158,21 +185,7 @@ int main()
         //update nebulae pos
         for(int i=0; i<3; i++)
         {
-            nebulae[i].pos.x += nebulaXVelocity * deltaTime;
-            nebulae[i].rec.x = nebulae[i].frame * nebulae[i].rec.width;
-            nebulae[i].runningTime += deltaTime;
-
-            if(nebulae[i].runningTime >= nebulae[i].updateTime)
-            {
-                nebulae[i].frame++;
-                nebulae[i].runningTime = 0.0;
-            }
-
-            if(nebulae[i].frame == 7)
-            {
-                nebulae[i].frame = 0;
-            }
-
+            nebulae[i] = UpdateNebulae(nebulae[i], nebulaXVelocity, deltaTime);
             DrawTextureRec(nebulaSprite, nebulae[i].rec, nebulae[i].pos, RED);
         }
 

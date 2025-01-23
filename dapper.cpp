@@ -1,84 +1,183 @@
 #include "raylib.h"
 #pragma region CUSTOM DATA TYPES
 
-    struct AnimData
+    class AnimData
     {
         Rectangle rec;
+        Rectangle paddedRec;
         Vector2 pos;
         int frame;
         float updateTime;
         float runningTime;
+
+        public :
+        
+        // Setters
+        void SetUpdateTime(float val)
+        {
+            updateTime = val;
+        }
+
+        void SetRunningTime(float val)
+        {
+            runningTime = val;
+        }
+
+        void SetPositon(float x, float y)
+        {
+            pos.x = x;
+            pos.y = y;
+        }
+
+        void SetFrame(int val)
+        {
+            frame = val;
+        }
+
+        void SetRectangle(float xpos, float ypos, float width, float height)
+        {
+            rec.x = xpos;
+            rec.y = ypos;
+            rec.width = width;
+            rec.height = height;
+        }
+
+        void SetPos(float x, float y)
+        {
+            pos.x = x;
+            pos.y = y;
+        }
+
+        void UpdateAnimationData(float deltaTime, int maxFrame)
+        {
+            runningTime += deltaTime;
+
+            if(runningTime >= updateTime)
+            {
+                frame++;
+                runningTime = 0.0;
+            } 
+
+            if(frame > maxFrame)
+            {
+                frame = 0;
+            }
+        }
+
+        bool IsGrounded(int groundVal)
+        {
+            if (pos.y >= (groundVal - rec.height))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        void IncrementXPos(float incrementVal)
+        {
+            pos.x += incrementVal;
+        }
+
+        void IncrementYPos(float incrementVal)
+        {
+            pos.y += incrementVal;
+        }
+
+        void SetCurrentXFrame()
+        {
+            rec.x = frame * rec.width;
+        }
+
+        // Getters
+        Rectangle GetRectangle()
+        {
+            return rec;
+        }
+
+        Rectangle GetPaddedRectangle()
+        {
+            return paddedRec;
+        }
+
+        Vector2 GetPos()
+        {
+            return pos;
+        }
+
     };
 
-    #pragma endregion CUSTOM DATA TYPES
+#pragma endregion CUSTOM DATA TYPES
+
 #pragma region PRIVATE METHODS
-bool IsScarfyGrounded(AnimData &scarfyData, int groundVal)
+
+
+void UpdateNebulaData(AnimData &nebulaData, float nebulaXVelocity, float deltaTime)
 {
-    if (scarfyData.pos.y >= (groundVal - scarfyData.rec.height))
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    nebulaData.IncrementXPos(nebulaXVelocity * deltaTime);
+    nebulaData.SetCurrentXFrame();
+    nebulaData.UpdateAnimationData(deltaTime, 7);
 }
 
-AnimData UpdateAnimationData(AnimData data, float deltaTime, int maxFrame)
-{
-    data.runningTime += deltaTime;
-
-    if(data.runningTime >= data.updateTime)
-    {
-        data.frame++;
-        data.runningTime = 0.0;
-    } 
-
-    if(data.frame > maxFrame)
-    {
-        data.frame = 0;
-    }
-
-    return data;
-}
-
-
-AnimData UpdateNebulae(AnimData nebulaeData, float nebulaXVelocity, float deltaTime)
-{
-    nebulaeData.pos.x += nebulaXVelocity * deltaTime;
-    nebulaeData.rec.x = nebulaeData.frame * nebulaeData.rec.width;
-    nebulaeData = UpdateAnimationData(nebulaeData, deltaTime, 7);
-    return nebulaeData;
-}
-
-AnimData UpdateScarfyData(AnimData scarfyData, float velocityY, float deltaTime, bool isGrounded)
+void UpdateScarfyData(AnimData &scarfyData, float velocityY, float deltaTime, bool isGrounded)
 {
     // update scarfy pos
-        scarfyData.pos.y += velocityY * deltaTime;
+        scarfyData.IncrementYPos(velocityY * deltaTime);
         
         // update animation frame
-        scarfyData.rec.x = scarfyData.frame * scarfyData.rec.width;
+        scarfyData.SetCurrentXFrame();
+
         //nebulaData.rec.y = nebulaData.rec.height;
 
         if(isGrounded)
         {
             // dont update animation frame if scarfy is not on the ground
-            scarfyData = UpdateAnimationData(scarfyData, deltaTime, 5);
+            scarfyData.UpdateAnimationData(deltaTime, 5);
         }
-        
-        return scarfyData;
+}
+
+void HandleScrollingTextures(float &x, int scrollSpeed, float dT, Texture2D &sprite)
+{
+        x -= scrollSpeed * dT;
+
+
+        if(x < -(sprite.width * 2.0))
+        {
+            x = 0;
+        }
+
+        Vector2 texture1Vector {x, 0.0};
+
+        Vector2 texture2Vector {x+(sprite.width*2.0), 0.0};
+
+        DrawTextureEx(sprite, texture1Vector, 0.0, 2.0, WHITE);
+        DrawTextureEx(sprite, texture2Vector, 0.0, 2.0, WHITE);
 }
 
 #pragma endregion PRIVATE METHODS
 #pragma region CONST FIELDS
 
-const int windowDimensions[2] = {300,600};
+const int windowDimensions[2] = {300,500};
 const int windowHeight = windowDimensions[0];
 const int windowWidth = windowDimensions[1];
 const char windowName[] = "DapperDasher";
 const char scarfySpritePath[] = "textures/scarfy.png";
 const char nebulaSpritePath[] = "textures/12_nebula_spritesheet.png";
+const char bgSpritePath[] = "textures/far-buildings.png";
+const char mgSpritePath[] = "textures/back-buildings.png";
+const char fgSpritePath[] = "textures/foreground.png";
+
 const int gravity = 1000;
+const int bgScrollSpeed = 20;
+const int mgScrollSpeed = 40;
+const int fgScrollSpeed = 80;
+
+const int countOfNebulae = 3;
+
+const int nebulaTexturePadding = 20;
+const int scarfyTexturePadding = 0;
 
 #pragma endregion CONST FIELDS
 #pragma region MAIN METHOD
@@ -96,6 +195,11 @@ int main()
     
     bool isGrounded;
 
+    float bgX{};
+    float mgX{};
+    float fgX{};
+
+
     #pragma endregion PRIVATE LOCAL FIELDS
 
     
@@ -105,9 +209,15 @@ int main()
     InitWindow(windowWidth, windowHeight, windowName);
     SetTargetFPS(60);
 
-    // nebula variables
+    // Initialize Textures
     Texture2D nebulaSprite = LoadTexture(nebulaSpritePath);
 
+    Texture2D bgSprite = LoadTexture(bgSpritePath);
+
+    Texture2D mgSprite = LoadTexture(mgSpritePath);
+
+    Texture2D fgSprite = LoadTexture(fgSpritePath);
+    
     // AnimData nebulaData
     // {
     //     {0,0,nebulaSprite.width/8.0, nebulaSprite.height/8.0},
@@ -117,17 +227,26 @@ int main()
     //     0.0
     // };
 
-    AnimData nebulae[3]{};
+    AnimData nebulae[countOfNebulae]{};
 
-    for(int i=0; i<3; i++)
+    for(int i=0; i<countOfNebulae; i++)
     {
-        nebulae[i].rec.x = 0;
-        nebulae[i].rec.y = 0;
-        nebulae[i].rec.width = nebulaSprite.width/8.0;
-        nebulae[i].rec.height = nebulaSprite.height/8.0;
-        nebulae[i].pos.x = windowWidth + ((nebulaSprite.height/8.0) * (i+1)), 
-        nebulae[i].pos.y = (windowHeight) - ((nebulaSprite.height/8.0) * (i+1));
+        // nebulae[i].rec.x = 0;
+        // nebulae[i].rec.y = 0;
+        // nebulae[i].rec.width = nebulaSprite.width/8.0;
+        // nebulae[i].rec.height = nebulaSprite.height/8.0;
+        nebulae[i].SetRectangle(0,0,nebulaSprite.width/8.0,nebulaSprite.height/8.0);
+
+        nebulae[i].SetPos(
+            windowWidth + ((nebulaSprite.height/8.0) * (i+1) * 2),
+            (windowHeight) - ((nebulaSprite.height/8.0) * GetRandomValue(1,3))
+        );
+
+        // nebulae[i].pos.x = windowWidth + ((nebulaSprite.height/8.0) * (i+1) * 2), 
+        // nebulae[i].pos.y = (windowHeight) - ((nebulaSprite.height/8.0) * GetRandomValue(1,3)); 
     }
+
+    float finishLine {nebulae[countOfNebulae-1].GetPos().x};
 
     // nebula x velocity in pixels/second.
     int nebulaXVelocity = -200;
@@ -135,14 +254,12 @@ int main()
     // scarfy variables
     Texture2D scarfySprite = LoadTexture(scarfySpritePath);
 
-    AnimData scarfyData
-    {
-        {0,0,scarfySprite.width/6.0,scarfySprite.height},
-        {windowWidth/2.0 - scarfyData.rec.width/2.0, windowHeight - scarfyData.rec.height},
-        0,
-        1.0/12.0,
-        0.0
-    };
+    AnimData scarfyData {};
+    scarfyData.SetRectangle(0,0,scarfySprite.width/6.0,scarfySprite.height);
+    scarfyData.SetPos(windowWidth/2.0 - scarfyData.GetRectangle().width/2.0, windowHeight - scarfyData.GetRectangle().height);
+    scarfyData.SetFrame(0);
+    scarfyData.SetUpdateTime(1.0/12.0);
+    scarfyData.SetRunningTime(0.0);
 
     #pragma endregion GAME START
 
@@ -155,9 +272,33 @@ int main()
 
         float deltaTime = GetFrameTime();
 
+        #pragma region BG/MG/FG FUNCTIONALITY
+
+        
+        // bgX -= bgScrollSpeed * deltaTime;
+
+        // if(bgX < -((bgSprite.width * 2.0) - displacement))
+        // {
+        //     bgX = displacement;
+        // }
+
+        // Vector2 bg1Vector {bgX, 0.0};
+
+        // Vector2 bg2Vector {bgX+(bgSprite.width*2.0), 0.0};
+
+        // DrawTextureEx(bgSprite, bg1Vector, 0.0, 2.0, WHITE);
+        // DrawTextureEx(bgSprite, bg2Vector, 0.0, 2.0, WHITE);
+
+        HandleScrollingTextures(bgX, bgScrollSpeed, deltaTime, bgSprite);
+        HandleScrollingTextures(mgX, mgScrollSpeed, deltaTime, mgSprite);
+        HandleScrollingTextures(fgX, fgScrollSpeed, deltaTime, fgSprite);
+
+        #pragma endregion BG/MG/FG FUNCTIONALITY
+
+
         #pragma region SCARFY FUNCTIONALITY
 
-        isGrounded = IsScarfyGrounded(scarfyData, groundVal);
+        isGrounded = scarfyData.IsGrounded(groundVal);
 
         if(!isGrounded)
         {
@@ -174,9 +315,9 @@ int main()
         }
 
         
-        scarfyData = UpdateScarfyData(scarfyData, velocityY, deltaTime, isGrounded);
+        UpdateScarfyData(scarfyData, velocityY, deltaTime, isGrounded);
 
-        DrawTextureRec(scarfySprite, scarfyData.rec, scarfyData.pos, WHITE);
+        DrawTextureRec(scarfySprite, scarfyData.GetRectangle(), scarfyData.GetPos(), WHITE);
         
         #pragma endregion SCARFY FUNCTIONALITY
 
@@ -185,9 +326,11 @@ int main()
         //update nebulae pos
         for(int i=0; i<3; i++)
         {
-            nebulae[i] = UpdateNebulae(nebulae[i], nebulaXVelocity, deltaTime);
-            DrawTextureRec(nebulaSprite, nebulae[i].rec, nebulae[i].pos, RED);
+            UpdateNebulaData(nebulae[i], nebulaXVelocity, deltaTime);
+            DrawTextureRec(nebulaSprite, nebulae[i].GetRectangle(), nebulae[i].GetPos(), RED);
         }
+
+        finishLine += nebulaXVelocity * deltaTime;
 
         #pragma endregion NEBULAE FUNCTIONALITY
 
@@ -200,6 +343,10 @@ int main()
 
     UnloadTexture(scarfySprite);
     UnloadTexture(nebulaSprite);
+    UnloadTexture(bgSprite);
+    UnloadTexture(mgSprite);
+    UnloadTexture(fgSprite);
+
     CloseWindow();
 
     #pragma endregion GAME END

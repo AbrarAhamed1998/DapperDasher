@@ -4,14 +4,20 @@
     class AnimData
     {
         Rectangle rec;
-        Rectangle paddedRec;
+        Rectangle currentPaddedRec;
         Vector2 pos;
         int frame;
         float updateTime;
         float runningTime;
+        int paddingValue;
 
         public :
         
+        void SetTexturePaddingValue(int val)
+        {
+            paddingValue = val;
+        }
+
         // Setters
         void SetUpdateTime(float val)
         {
@@ -40,12 +46,18 @@
             rec.y = ypos;
             rec.width = width;
             rec.height = height;
+
+            currentPaddedRec.width = rec.width - (2 * paddingValue);
+            currentPaddedRec.height = rec.width - (2 * paddingValue);
         }
 
         void SetPos(float x, float y)
         {
             pos.x = x;
             pos.y = y;
+
+            currentPaddedRec.x = pos.x + paddingValue;
+            currentPaddedRec.y = pos.y + paddingValue;
         }
 
         void UpdateAnimationData(float deltaTime, int maxFrame)
@@ -99,7 +111,7 @@
 
         Rectangle GetPaddedRectangle()
         {
-            return paddedRec;
+            return currentPaddedRec;
         }
 
         Vector2 GetPos()
@@ -235,6 +247,7 @@ int main()
         // nebulae[i].rec.y = 0;
         // nebulae[i].rec.width = nebulaSprite.width/8.0;
         // nebulae[i].rec.height = nebulaSprite.height/8.0;
+        nebulae[i].SetTexturePaddingValue(nebulaTexturePadding);
         nebulae[i].SetRectangle(0,0,nebulaSprite.width/8.0,nebulaSprite.height/8.0);
 
         nebulae[i].SetPos(
@@ -255,6 +268,7 @@ int main()
     Texture2D scarfySprite = LoadTexture(scarfySpritePath);
 
     AnimData scarfyData {};
+    scarfyData.SetTexturePaddingValue(scarfyTexturePadding);
     scarfyData.SetRectangle(0,0,scarfySprite.width/6.0,scarfySprite.height);
     scarfyData.SetPos(windowWidth/2.0 - scarfyData.GetRectangle().width/2.0, windowHeight - scarfyData.GetRectangle().height);
     scarfyData.SetFrame(0);

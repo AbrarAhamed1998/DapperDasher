@@ -125,7 +125,6 @@
 
 #pragma region PRIVATE METHODS
 
-
 void UpdateNebulaData(AnimData &nebulaData, float nebulaXVelocity, float deltaTime)
 {
     nebulaData.IncrementXPos(nebulaXVelocity * deltaTime);
@@ -180,6 +179,8 @@ const char nebulaSpritePath[] = "textures/12_nebula_spritesheet.png";
 const char bgSpritePath[] = "textures/far-buildings.png";
 const char mgSpritePath[] = "textures/back-buildings.png";
 const char fgSpritePath[] = "textures/foreground.png";
+const char gameOverText[] = "Game Over!";
+const char gameWonText[] = "You Win!";
 
 const int gravity = 1000;
 const int bgScrollSpeed = 20;
@@ -188,7 +189,7 @@ const int fgScrollSpeed = 80;
 
 const int countOfNebulae = 3;
 
-const int nebulaTexturePadding = 20;
+const int nebulaTexturePadding = 50z;
 const int scarfyTexturePadding = 0;
 
 #pragma endregion CONST FIELDS
@@ -206,6 +207,7 @@ int main()
     int jumpForce = 600;
     
     bool isGrounded;
+    bool collision{};
 
     float bgX{};
     float mgX{};
@@ -230,23 +232,10 @@ int main()
 
     Texture2D fgSprite = LoadTexture(fgSpritePath);
     
-    // AnimData nebulaData
-    // {
-    //     {0,0,nebulaSprite.width/8.0, nebulaSprite.height/8.0},
-    //     {windowWidth, windowHeight - nebulaData.rec.height},
-    //     0,
-    //     1.0/16.0,
-    //     0.0
-    // };
-
     AnimData nebulae[countOfNebulae]{};
 
     for(int i=0; i<countOfNebulae; i++)
     {
-        // nebulae[i].rec.x = 0;
-        // nebulae[i].rec.y = 0;
-        // nebulae[i].rec.width = nebulaSprite.width/8.0;
-        // nebulae[i].rec.height = nebulaSprite.height/8.0;
         nebulae[i].SetTexturePaddingValue(nebulaTexturePadding);
         nebulae[i].SetRectangle(0,0,nebulaSprite.width/8.0,nebulaSprite.height/8.0);
 
@@ -254,9 +243,6 @@ int main()
             windowWidth + ((nebulaSprite.height/8.0) * (i+1) * 2),
             (windowHeight) - ((nebulaSprite.height/8.0) * GetRandomValue(1,3))
         );
-
-        // nebulae[i].pos.x = windowWidth + ((nebulaSprite.height/8.0) * (i+1) * 2), 
-        // nebulae[i].pos.y = (windowHeight) - ((nebulaSprite.height/8.0) * GetRandomValue(1,3)); 
     }
 
     float finishLine {nebulae[countOfNebulae-1].GetPos().x};
@@ -287,30 +273,56 @@ int main()
         float deltaTime = GetFrameTime();
 
         #pragma region BG/MG/FG FUNCTIONALITY
-
         
-        // bgX -= bgScrollSpeed * deltaTime;
-
-        // if(bgX < -((bgSprite.width * 2.0) - displacement))
-        // {
-        //     bgX = displacement;
-        // }
-
-        // Vector2 bg1Vector {bgX, 0.0};
-
-        // Vector2 bg2Vector {bgX+(bgSprite.width*2.0), 0.0};
-
-        // DrawTextureEx(bgSprite, bg1Vector, 0.0, 2.0, WHITE);
-        // DrawTextureEx(bgSprite, bg2Vector, 0.0, 2.0, WHITE);
-
         HandleScrollingTextures(bgX, bgScrollSpeed, deltaTime, bgSprite);
         HandleScrollingTextures(mgX, mgScrollSpeed, deltaTime, mgSprite);
         HandleScrollingTextures(fgX, fgScrollSpeed, deltaTime, fgSprite);
 
         #pragma endregion BG/MG/FG FUNCTIONALITY
 
+        #pragma region WIN OR LOSE CONDITION
+
+        for(AnimData nebula : nebulae)
+        {
+            Rectangle nebRect {
+                nebula.GetPos().x + nebulaTexturePadding,
+                nebula.GetPos().y + nebulaTexturePadding,
+                nebula.GetPaddedRectangle().width,
+                nebula.GetPaddedRectangle().height
+            };
+
+            Rectangle scarfyRect {
+                scarfyData.GetPos().x,
+                scarfyData.GetPos().y,
+                scarfyData.GetPaddedRectangle().width,
+                scarfyData.GetPaddedRectangle().height
+            };
+
+            if(CheckCollisionRecs(nebRect, scarfyRect))
+            {
+                collision = true;
+            }
+
+            if(collision)
+                break;
+        }
+
+        if(collision)
+        {
+            DrawText(gameOverText, windowWidth/4, windowHeight/2, 40, RED);
+        }
+
+
+        if(scarfyData.GetPos().x >= finishLine && !collision)
+        {
+            DrawText(gameWonText, windowWidth/4, windowHeight/2, 40, GREEN);
+        }
+
+        #pragma endregion WIN OR LOSE CONDITION
 
         #pragma region SCARFY FUNCTIONALITY
+
+        
 
         isGrounded = scarfyData.IsGrounded(groundVal);
 
@@ -331,7 +343,13 @@ int main()
         
         UpdateScarfyData(scarfyData, velocityY, deltaTime, isGrounded);
 
-        DrawTextureRec(scarfySprite, scarfyData.GetRectangle(), scarfyData.GetPos(), WHITE);
+        
+
+        if(!collision)
+        {
+            DrawTextureRec(scarfySprite, scarfyData.GetRectangle(), scarfyData.GetPos(), WHITE);
+        }
+
         
         #pragma endregion SCARFY FUNCTIONALITY
 
@@ -341,7 +359,8 @@ int main()
         for(int i=0; i<3; i++)
         {
             UpdateNebulaData(nebulae[i], nebulaXVelocity, deltaTime);
-            DrawTextureRec(nebulaSprite, nebulae[i].GetRectangle(), nebulae[i].GetPos(), RED);
+            if(!collision)
+                DrawTextureRec(nebulaSprite, nebulae[i].GetRectangle(), nebulae[i].GetPos(), RED);
         }
 
         finishLine += nebulaXVelocity * deltaTime;
